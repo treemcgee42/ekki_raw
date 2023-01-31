@@ -1,0 +1,45 @@
+== capturing input
+
+The most direct way of handling user input is through the `winit`
+event loop. But this becomes messy pretty quickly, especially when
+we want to perform an action given a specific combination of input 
+events.
+
+My short-term goal is to get a cube on the screen and be able to 
+navigate around it using user input. In Maya, for example, panning
+is done by holding down Option and LMB, and then dragging. With this
+in mind, I realized we also need a mechanism that remembers which keys
+are being held down (`winit` sends us an event when the key is 
+pressed and when it is released, but there is no event in between).
+
+What was natural for me was to imagine all the possible inputs as 
+configurations of a state machine. Input events would update this 
+state machine, and rather than the application responding to the 
+actual receiving of inputs through `winit`, it will check for every 
+frame the input state machine and act accordingly. Here is how
+I started doing this for the mouse:
+
+```
+struct InputState {
+	mouse_state: MouseState,
+	...
+}
+
+struct MouseState {
+	position: (f64, f64),
+	button_state: MouseButtonState,
+}
+
+struct MouseButtonState {
+	left_pressed: bool,
+	...
+}
+```
+
+Right now we don't do anything with it (maybe include this in next post).
+
+== abstracting draw calls
+
+Right now, I'm not taking into consideration multiple render pipelines
+and render passes, but I still want to be able to abstract the drawing
+mechanism so that it can be configured by the application. 
