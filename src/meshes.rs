@@ -75,6 +75,28 @@ const CUBE_VERTICES: &[Vertex] = &[
         position: [0.5, -0.5, -0.5],
         color: [0.9, 0.9, 0.9],
     },
+    // right face
+    Vertex {
+        // 4
+        position: [0.5, 0.5, 0.5],
+        color: [0.9, 0.9, 0.9],
+    },
+    Vertex {
+        // 5
+        position: [0.5, -0.5, 0.5],
+        color: [0.9, 0.9, 0.9],
+    },
+    // left face
+    Vertex {
+        // 6
+        position: [-0.5, 0.5, 0.5],
+        color: [0.9, 0.9, 0.9],
+    },
+    Vertex {
+        // 7
+        position: [-0.5, -0.5, 0.5],
+        color: [0.9, 0.9, 0.9],
+    },
 ];
 
 #[rustfmt::skip]
@@ -82,6 +104,21 @@ const CUBE_INDICES: &[u16] = &[
     // front face
     0, 2, 1,
     2, 3, 1, 
+    // right face
+    1, 3, 4,
+    3, 5, 4,
+    // left face
+    0, 6, 7,
+    0, 7, 2,
+    // back face
+    6, 4, 7,
+    7, 4, 5,
+    // top face
+    1, 6, 0,
+    1, 4, 6,
+    // bottom face
+    2, 7, 3,
+    3, 7, 5,
 ];
 
 // E==== CONSTANTS }}}1

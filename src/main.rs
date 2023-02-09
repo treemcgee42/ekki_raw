@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use camera::Camera;
 use draw::draw_meshes;
 use event_loop::run_event_loop;
 use input_state::InputState;
@@ -12,13 +13,15 @@ mod camera;
 mod draw;
 mod event_loop;
 mod input_state;
+mod math;
 mod meshes;
 mod vertex;
 mod wgpu_setup;
 mod windowing;
 
 pub struct ApplicationState {
-    event_loop: EventLoop<()>,
+    event_loop: Option<EventLoop<()>>,
+    camera: Camera,
     renderer: Renderer,
     window_state: WindowState,
     input_state: InputState,
@@ -32,13 +35,19 @@ impl ApplicationState {
         let window = Rc::new(window_);
         let window_state = WindowState::initialize(window.clone());
 
-        let renderer = Renderer::initialize(window.clone()).await;
+        let camera = Camera::initialize(
+            window_state.size.width as f32,
+            window_state.size.height as f32,
+        );
+
+        let renderer = Renderer::initialize(window.clone(), &camera).await;
         let mesh_bank = MeshBank::initialize();
 
         let input_state = InputState::initialize();
 
         Self {
-            event_loop,
+            event_loop: Some(event_loop),
+            camera,
             renderer,
             window_state,
             input_state,
@@ -51,8 +60,11 @@ async fn run() {
     env_logger::init();
 
     let mut app_state = ApplicationState::initialize().await;
+    let event_loop = app_state.event_loop.unwrap();
+    app_state.event_loop = None;
+
     draw_cube(&mut app_state);
-    run_event_loop(app_state).await;
+    run_event_loop(event_loop, app_state).await;
 }
 
 fn draw_cube(state: &mut ApplicationState) {

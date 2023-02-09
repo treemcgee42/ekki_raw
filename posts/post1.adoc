@@ -1,3 +1,5 @@
+commit: `14b8e9b5dae58b8dcaddb9af88993067388b038a`
+
 == capturing input
 
 The most direct way of handling user input is through the `winit`
@@ -42,4 +44,27 @@ Right now we don't do anything with it (maybe include this in next post).
 
 Right now, I'm not taking into consideration multiple render pipelines
 and render passes, but I still want to be able to abstract the drawing
-mechanism so that it can be configured by the application. 
+mechanism so that it can be configured by the application. My idea was
+to maintain a list of draw commands, that the renderer would iterate
+over each time a redraw was requested.
+
+```
+struct Renderer {
+	to_draw: Vec<DrawCommands>,
+	...
+}
+
+impl Renderer {
+	fn render(&mut self) {
+		// Set up render pipeline
+		...
+
+		for draw_command in self.to_draw {
+			do(draw_command)
+		}
+	}
+}
+```
+
+This is pretty flexible, since multiple draw calls is not uncommon,
+for example all the UI could be in its own draw call. 

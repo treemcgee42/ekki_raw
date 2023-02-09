@@ -51,6 +51,8 @@ fn collect_meshes_into_buffers(device: &wgpu::Device, meshes: &Vec<Rc<Mesh>>) ->
         // a copy when sending it to the GPU. Here, we copy up front
         // and just move later.
         vertices.append(&mut mesh.vertices.clone());
+
+        // TODO: NEED TO ADJUST INDEX NUMBERS
         indices.append(&mut mesh.indices.clone());
     }
 

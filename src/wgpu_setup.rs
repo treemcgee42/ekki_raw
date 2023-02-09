@@ -4,8 +4,10 @@ use wgpu::{
 };
 use winit::{event::WindowEvent, window::Window};
 
+use crate::camera::{Camera, CameraUniform};
 use crate::draw::{DrawCommand, DrawCommandKind};
 use crate::vertex::Vertex;
+use crate::ApplicationState;
 
 /// This encapsulates GPU-specific functionality.
 pub struct Renderer {
@@ -15,10 +17,11 @@ pub struct Renderer {
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
     pub to_draw: Vec<DrawCommand>,
+    camera_info: CameraInfo,
 }
 
 impl Renderer {
-    pub async fn initialize(window: Rc<Window>) -> Self {
+    pub async fn initialize(window: Rc<Window>, camera: &Camera) -> Self {
         let size = window.inner_size();
 
         // Create instance --> create surface & adapter
@@ -67,10 +70,13 @@ impl Renderer {
             source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
         });
 
+        // Camera
+        let camera_info = CameraInfo::initialize(&device, camera);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&camera_info.bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -121,10 +127,11 @@ impl Renderer {
             queue,
             render_pipeline,
             to_draw: Vec::new(),
+            camera_info,
         }
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, camera: &mut Camera, new_size: winit::dpi::PhysicalSize<u32>) {
         if !(new_size.width > 0 && new_size.height > 0) {
             return;
         }
@@ -132,13 +139,24 @@ impl Renderer {
         self.surface_config.width = new_size.width;
         self.surface_config.height = new_size.height;
         self.surface.configure(&self.device, &self.surface_config);
+
+        camera.handle_window_resize(new_size.width as f32, new_size.height as f32);
     }
 
     pub fn event_was_processed(&mut self, event: &WindowEvent) -> bool {
         false
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self, camera: &Camera) {
+        self.camera_info
+            .uniform
+            .update_view_projection_matrix(&camera);
+        self.queue.write_buffer(
+            &self.camera_info.buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_info.uniform]),
+        );
+    }
 
     fn begin_render_pass(
         &mut self,
@@ -167,6 +185,7 @@ impl Renderer {
         });
 
         render_pass.set_pipeline(&self.render_pipeline);
+        render_pass.set_bind_group(0, &self.camera_info.bind_group, &[]);
 
         for command in &self.to_draw {
             render_pass.set_vertex_buffer(0, command.wgpu_mesh.vertex_buffer.slice(..));
@@ -201,5 +220,53 @@ impl Renderer {
         output.present();
 
         Ok(())
+    }
+}
+
+struct CameraInfo {
+    uniform: CameraUniform,
+    buffer: wgpu::Buffer,
+    bind_group_layout: wgpu::BindGroupLayout,
+    bind_group: wgpu::BindGroup,
+}
+
+impl CameraInfo {
+    fn initialize(device: &wgpu::Device, camera: &Camera) -> Self {
+        let uniform = CameraUniform::new(camera);
+
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+            label: Some("bind_group_layout"),
+        });
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffer.as_entire_binding(),
+            }],
+            label: Some("camera_bind_group"),
+        });
+
+        Self {
+            uniform,
+            buffer,
+            bind_group_layout,
+            bind_group,
+        }
     }
 }
