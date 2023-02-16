@@ -55,6 +55,9 @@ impl Camera {
     pub fn get_view_projection_matrix(&self) -> Matrix4 {
         self.view_projection_matrix
     }
+    pub fn get_view_projection_matrix_inverse(&self) -> Matrix4 {
+        self.get_view_projection_matrix().invert().unwrap()
+    }
 
     pub fn solidify_view_info(&mut self) {
         self.view_info.current_rotation =
@@ -74,6 +77,14 @@ impl Camera {
     fn set_rotation_modifier(&mut self, val: Quaternion) {
         self.view_info.set_rotation_modifier(val);
         self.rebuild_view_projection_matrix();
+    }
+
+    pub fn get_z_near(&self) -> f32 {
+        self.projection_info.z_near
+    }
+
+    pub fn get_z_far(&self) -> f32 {
+        self.projection_info.z_far
     }
 }
 
@@ -244,7 +255,7 @@ impl ProjectionInfo {
         self.build_projection_matrix();
     }
     fn get_projection_matrix(&self) -> Matrix4 {
-        self.projection_matrix.clone()
+        self.projection_matrix
     }
 }
 
@@ -257,7 +268,7 @@ pub struct CameraUniform {
 impl CameraUniform {
     pub fn new(camera: &Camera) -> Self {
         Self {
-            view_projection_matrix: camera.build_view_projection_matrix().into(),
+            view_projection_matrix: camera.get_view_projection_matrix().into(),
         }
     }
 

@@ -6,6 +6,7 @@ use winit::{event::WindowEvent, window::Window};
 
 use crate::camera::{Camera, CameraUniform};
 use crate::draw::{DrawCommand, DrawCommandKind};
+use crate::grid::{Grid, GridInitializeArgs};
 use crate::vertex::Vertex;
 use crate::ApplicationState;
 
@@ -18,6 +19,8 @@ pub struct Renderer {
     render_pipeline: wgpu::RenderPipeline,
     pub to_draw: Vec<DrawCommand>,
     camera_info: CameraInfo,
+    grid: Grid,
+    depth_texture: DepthTexture,
 }
 
 impl Renderer {
@@ -73,6 +76,9 @@ impl Renderer {
         // Camera
         let camera_info = CameraInfo::initialize(&device, camera);
 
+        // Depth buffer
+        let depth_texture = DepthTexture::new(&device, &surface_config);
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
@@ -111,13 +117,20 @@ impl Renderer {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // 1.
+            depth_stencil: Some(DepthTexture::create_depth_stencil_state()),
             multisample: wgpu::MultisampleState {
                 count: 1,                         // 2.
                 mask: !0,                         // 3.
                 alpha_to_coverage_enabled: false, // 4.
             },
             multiview: None, // 5.
+        });
+
+        let grid = Grid::initialize(GridInitializeArgs {
+            device: &device,
+            view_projection_matrix: camera.get_view_projection_matrix(),
+            camera: &camera,
+            surface_configuration: &surface_config,
         });
 
         Self {
@@ -128,6 +141,8 @@ impl Renderer {
             render_pipeline,
             to_draw: Vec::new(),
             camera_info,
+            grid,
+            depth_texture,
         }
     }
 
@@ -139,6 +154,8 @@ impl Renderer {
         self.surface_config.width = new_size.width;
         self.surface_config.height = new_size.height;
         self.surface.configure(&self.device, &self.surface_config);
+
+        self.depth_texture = DepthTexture::new(&self.device, &self.surface_config);
 
         camera.handle_window_resize(new_size.width as f32, new_size.height as f32);
     }
@@ -155,6 +172,13 @@ impl Renderer {
             &self.camera_info.buffer,
             0,
             bytemuck::cast_slice(&[self.camera_info.uniform]),
+        );
+
+        self.grid.uniform.update_matrix(camera);
+        self.queue.write_buffer(
+            &self.grid.buffer,
+            0,
+            bytemuck::cast_slice(&[self.grid.uniform]),
         );
     }
 
@@ -181,9 +205,10 @@ impl Renderer {
                     },
                 }),
             ],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(self.depth_texture.create_depth_stencil_attachment()),
         });
 
+        // SHAPES
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.camera_info.bind_group, &[]);
 
@@ -200,6 +225,12 @@ impl Renderer {
                 }
             }
         }
+
+        // GRID
+        render_pass.set_pipeline(&self.grid.pipeline);
+        render_pass.set_bind_group(0, &self.grid.bind_group, &[]);
+        render_pass.set_index_buffer(self.grid.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        render_pass.draw_indexed(0..6, 0, 0..1);
     }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -267,6 +298,77 @@ impl CameraInfo {
             buffer,
             bind_group_layout,
             bind_group,
+        }
+    }
+}
+
+pub struct DepthTexture {
+    pub texture: wgpu::Texture,
+    pub texture_view: wgpu::TextureView,
+    pub sampler: wgpu::Sampler,
+}
+
+impl DepthTexture {
+    const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+    const COMPARE_FUNCTION: wgpu::CompareFunction = wgpu::CompareFunction::Less;
+
+    pub fn new(device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) -> Self {
+        let size = wgpu::Extent3d {
+            width: surface_config.width,
+            height: surface_config.height,
+            depth_or_array_layers: 1,
+        };
+        let desc = wgpu::TextureDescriptor {
+            label: Some("depth texture"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: Self::DEPTH_FORMAT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        };
+        let texture = device.create_texture(&desc);
+
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            compare: Some(wgpu::CompareFunction::LessEqual),
+            lod_min_clamp: 0.0,
+            lod_max_clamp: 100.0,
+            ..Default::default()
+        });
+
+        Self {
+            texture,
+            texture_view,
+            sampler,
+        }
+    }
+
+    pub fn create_depth_stencil_state() -> wgpu::DepthStencilState {
+        wgpu::DepthStencilState {
+            format: Self::DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::LessEqual,
+            stencil: wgpu::StencilState::default(),
+            bias: wgpu::DepthBiasState::default(),
+        }
+    }
+
+    pub fn create_depth_stencil_attachment(&self) -> wgpu::RenderPassDepthStencilAttachment {
+        wgpu::RenderPassDepthStencilAttachment {
+            view: &self.texture_view,
+            depth_ops: Some(wgpu::Operations {
+                load: wgpu::LoadOp::Clear(1.0),
+                store: true,
+            }),
+            stencil_ops: None,
         }
     }
 }

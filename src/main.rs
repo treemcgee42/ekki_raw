@@ -12,6 +12,7 @@ use winit::event_loop::EventLoop;
 mod camera;
 mod draw;
 mod event_loop;
+mod grid;
 mod input_state;
 mod math;
 mod meshes;

@@ -58,12 +58,12 @@ const CUBE_VERTICES: &[Vertex] = &[
     Vertex {
         // 0
         position: [-0.5, 0.5, -0.5],
-        color: [0.9, 0.9, 0.9],
+        color: [0.9, 0., 0.],
     },
     Vertex {
         // 1
         position: [0.5, 0.5, -0.5],
-        color: [0.9, 0.9, 0.9],
+        color: [0.9, 0., 0.],
     },
     Vertex {
         // 2
@@ -79,7 +79,7 @@ const CUBE_VERTICES: &[Vertex] = &[
     Vertex {
         // 4
         position: [0.5, 0.5, 0.5],
-        color: [0.9, 0.9, 0.9],
+        color: [0.9, 0., 0.],
     },
     Vertex {
         // 5
@@ -90,7 +90,7 @@ const CUBE_VERTICES: &[Vertex] = &[
     Vertex {
         // 6
         position: [-0.5, 0.5, 0.5],
-        color: [0.9, 0.9, 0.9],
+        color: [0.9, 0., 0.],
     },
     Vertex {
         // 7
@@ -102,23 +102,23 @@ const CUBE_VERTICES: &[Vertex] = &[
 #[rustfmt::skip]
 const CUBE_INDICES: &[u16] = &[
     // front face
-    0, 2, 1,
-    2, 3, 1, 
+    0, 1, 2,
+    2, 1, 3, 
     // right face
-    1, 3, 4,
-    3, 5, 4,
+    1, 4, 3,
+    3, 4, 5,
     // left face
-    0, 6, 7,
-    0, 7, 2,
+    0, 7, 6,
+    0, 2, 7,
     // back face
-    6, 4, 7,
-    7, 4, 5,
+    6, 7, 4,
+    7, 5, 4,
     // top face
-    1, 6, 0,
-    1, 4, 6,
+    1, 0, 6,
+    1, 6, 4,
     // bottom face
-    2, 7, 3,
-    3, 7, 5,
+    2, 3, 7,
+    3, 5, 7,
 ];
 
 // E==== CONSTANTS }}}1

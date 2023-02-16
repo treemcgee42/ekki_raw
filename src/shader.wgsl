@@ -15,6 +15,7 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>, // gl_Position
     @location(0) color: vec3<f32>,
+    @location(1) fragment_depth: f32,
 };
 
 @vertex
@@ -24,15 +25,27 @@ fn vs_main(
     var out: VertexOutput;
 
     out.color = model.color;
-    out.clip_position = camera.view_projection_matrix * vec4<f32>(model.position, 1.0);
+    let clip_position = camera.view_projection_matrix * vec4<f32>(model.position, 1.0);    
+    out.fragment_depth = clip_position.z / clip_position.w;
+    out.clip_position = clip_position; 
 
     return out;
 }
 
 // Fragment shader
 
+struct FragmentShaderOutput {
+    @location(0) color: vec4<f32>,
+    @builtin(frag_depth) fragDepth: f32,
+}
+
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(in.color, 1.0);
+fn fs_main(in: VertexOutput) -> FragmentShaderOutput {
+    var out: FragmentShaderOutput;
+
+    out.fragDepth = in.fragment_depth; 
+    out.color = vec4<f32>(in.color, 1.0);
+
+    return out;
 }
 

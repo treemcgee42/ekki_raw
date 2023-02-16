@@ -20,23 +20,12 @@ impl From<Quaternion> for Matrix4 {
 }
 
 impl Matrix4 {
+    #[cfg_attr(rustfmt, rustfmt_skip)]    
     pub const fn new(
-        c0r0: Float,
-        c0r1: Float,
-        c0r2: Float,
-        c0r3: Float,
-        c1r0: Float,
-        c1r1: Float,
-        c1r2: Float,
-        c1r3: Float,
-        c2r0: Float,
-        c2r1: Float,
-        c2r2: Float,
-        c2r3: Float,
-        c3r0: Float,
-        c3r1: Float,
-        c3r2: Float,
-        c3r3: Float,
+        c0r0: Float, c0r1: Float, c0r2: Float, c0r3: Float,
+        c1r0: Float, c1r1: Float, c1r2: Float, c1r3: Float,
+        c2r0: Float, c2r1: Float, c2r2: Float, c2r3: Float,
+        c3r0: Float, c3r1: Float, c3r2: Float, c3r3: Float,
     ) -> Self {
         Self {
             internal: cgmath::Matrix4::new(
@@ -44,6 +33,17 @@ impl Matrix4 {
                 c3r2, c3r3,
             ),
         }
+    }
+
+    pub fn invert(&self) -> Result<Self, ()> {
+        let internal = self.internal.invert();
+        if internal.is_none() {
+            return Err(());
+        }
+
+        Ok(Self {
+            internal: internal.unwrap(),
+        })
     }
 
     pub fn from_translation(t: Vector3) -> Self {
