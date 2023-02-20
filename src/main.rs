@@ -9,8 +9,10 @@ use wgpu_setup::Renderer;
 use windowing::{create_window, WindowState};
 use winit::event_loop::EventLoop;
 
+mod bmesh;
 mod camera;
 mod draw;
+mod edges;
 mod event_loop;
 mod grid;
 mod input_state;
