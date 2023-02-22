@@ -6,20 +6,20 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    pub fn get_descriptor<'a>() -> wgpu::VertexBufferLayout<'a> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
+    pub fn get_descriptor<'a>() -> eframe::wgpu::VertexBufferLayout<'a> {
+        eframe::wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as eframe::wgpu::BufferAddress,
+            step_mode: eframe::wgpu::VertexStepMode::Vertex,
             attributes: &[
-                wgpu::VertexAttribute {
+                eframe::wgpu::VertexAttribute {
                     offset: 0,
                     shader_location: 0,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: eframe::wgpu::VertexFormat::Float32x3,
                 },
-                wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+                eframe::wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 3]>() as eframe::wgpu::BufferAddress,
                     shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: eframe::wgpu::VertexFormat::Float32x3,
                 },
             ],
         }

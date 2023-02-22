@@ -5,6 +5,7 @@ use cgmath::InnerSpace;
 use super::point::Point3;
 use super::Float;
 
+#[derive(Clone)]
 pub struct Vector2 {
     pub(super) internal: cgmath::Vector2<Float>,
 }
@@ -25,7 +26,19 @@ impl Into<[f32; 2]> for Vector2 {
     }
 }
 
+impl From<eframe::egui::Vec2> for Vector2 {
+    fn from(v: eframe::egui::Vec2) -> Self {
+        Self::new(v.x as Float, v.y as Float)
+    }
+}
+
 impl Vector2 {
+    pub fn new(x: Float, y: Float) -> Self {
+        Self {
+            internal: cgmath::Vector2::new(x, y),
+        }
+    }
+
     pub fn x(&self) -> Float {
         self.internal.x
     }
@@ -47,6 +60,16 @@ impl Vector2 {
         Self {
             internal: cgmath::Vector2::new(v.y(), -v.x()),
         }
+    }
+
+    pub fn are_approximately_equal(v1: &Self, v2: &Self) -> bool {
+        if Float::abs(v1.x() - v2.x()) < Float::EPSILON
+            && Float::abs(v1.y() - v2.y()) < Float::EPSILON
+        {
+            return true;
+        }
+
+        false
     }
 }
 

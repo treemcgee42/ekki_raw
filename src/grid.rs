@@ -1,4 +1,6 @@
-use wgpu::util::DeviceExt;
+use std::sync::Arc;
+
+use eframe::wgpu::util::DeviceExt;
 
 use crate::{camera::Camera, math::matrix::Matrix4, wgpu_setup::DepthTexture};
 
@@ -36,46 +38,47 @@ impl GridUniform {
 }
 
 pub struct GridInitializeArgs<'a> {
-    pub device: &'a wgpu::Device,
+    pub device: &'a Arc<eframe::wgpu::Device>,
+    pub surface_format: eframe::wgpu::TextureFormat,
     pub view_projection_matrix: Matrix4,
     pub camera: &'a Camera,
-    pub surface_configuration: &'a wgpu::SurfaceConfiguration,
 }
 
-pub struct Grid {
-    pub pipeline: wgpu::RenderPipeline,
-    pub bind_group: wgpu::BindGroup,
-    pub index_buffer: wgpu::Buffer,
-    pub uniform: GridUniform,
-    pub buffer: wgpu::Buffer,
+pub struct GridRenderResources {
+    pub pipeline: eframe::wgpu::RenderPipeline,
+    pub bind_group: eframe::wgpu::BindGroup,
+    pub index_buffer: eframe::wgpu::Buffer,
+    // pub uniform: GridUniform,
+    pub buffer: eframe::wgpu::Buffer,
 }
 
-impl Grid {
+impl GridRenderResources {
     pub fn initialize(args: GridInitializeArgs) -> Self {
         let uniform = GridUniform::new(args.camera);
         let buffer = args
             .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            .create_buffer_init(&eframe::wgpu::util::BufferInitDescriptor {
                 label: Some("grid buffer"),
                 contents: bytemuck::cast_slice(&[uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                usage: eframe::wgpu::BufferUsages::UNIFORM | eframe::wgpu::BufferUsages::COPY_DST,
             });
 
         let shader = args
             .device
-            .create_shader_module(wgpu::ShaderModuleDescriptor {
+            .create_shader_module(eframe::wgpu::ShaderModuleDescriptor {
                 label: Some("grid shader"),
-                source: wgpu::ShaderSource::Wgsl(include_str!("grid.wgsl").into()),
+                source: eframe::wgpu::ShaderSource::Wgsl(include_str!("grid.wgsl").into()),
             });
 
         let bind_group_layout =
             args.device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    entries: &[wgpu::BindGroupLayoutEntry {
+                .create_bind_group_layout(&eframe::wgpu::BindGroupLayoutDescriptor {
+                    entries: &[eframe::wgpu::BindGroupLayoutEntry {
                         binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
+                        visibility: eframe::wgpu::ShaderStages::VERTEX
+                            | eframe::wgpu::ShaderStages::FRAGMENT,
+                        ty: eframe::wgpu::BindingType::Buffer {
+                            ty: eframe::wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
                             min_binding_size: None,
                         },
@@ -83,77 +86,74 @@ impl Grid {
                     }],
                     label: Some("grid bind group layout"),
                 });
-        let bind_group = args.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffer.as_entire_binding(),
-            }],
-            label: Some("grid bind group"),
-        });
+        let bind_group = args
+            .device
+            .create_bind_group(&eframe::wgpu::BindGroupDescriptor {
+                layout: &bind_group_layout,
+                entries: &[eframe::wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
+                label: Some("grid bind group"),
+            });
 
         let render_pipeline_layout =
             args.device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                .create_pipeline_layout(&eframe::wgpu::PipelineLayoutDescriptor {
                     label: Some("grid render pipeline layout"),
                     bind_group_layouts: &[&bind_group_layout],
                     push_constant_ranges: &[],
                 });
 
-        let pipeline = args
-            .device
-            .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: Some("grid render pipeline"),
-                layout: Some(&render_pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader,
-                    entry_point: "vs_main",
-                    buffers: &[],
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: "fs_main",
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: args.surface_configuration.format,
-                        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList,
-                    strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: Some(wgpu::Face::Back),
-                    // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                    polygon_mode: wgpu::PolygonMode::Fill,
-                    // Requires Features::DEPTH_CLIP_CONTROL
-                    unclipped_depth: false,
-                    // Requires Features::CONSERVATIVE_RASTERIZATION
-                    conservative: false,
-                },
-                depth_stencil: Some(DepthTexture::create_depth_stencil_state()),
-                multisample: wgpu::MultisampleState {
-                    count: 1,
-                    mask: !0,
-                    alpha_to_coverage_enabled: false,
-                },
-                multiview: None,
-            });
+        let pipeline =
+            args.device
+                .create_render_pipeline(&eframe::wgpu::RenderPipelineDescriptor {
+                    label: Some("grid render pipeline"),
+                    layout: Some(&render_pipeline_layout),
+                    vertex: eframe::wgpu::VertexState {
+                        module: &shader,
+                        entry_point: "vs_main",
+                        buffers: &[],
+                    },
+                    fragment: Some(eframe::wgpu::FragmentState {
+                        module: &shader,
+                        entry_point: "fs_main",
+                        targets: &[Some(eframe::wgpu::ColorTargetState {
+                            format: args.surface_format,
+                            blend: Some(eframe::wgpu::BlendState::ALPHA_BLENDING),
+                            write_mask: eframe::wgpu::ColorWrites::ALL,
+                        })],
+                    }),
+                    primitive: eframe::wgpu::PrimitiveState {
+                        topology: eframe::wgpu::PrimitiveTopology::TriangleList,
+                        strip_index_format: None,
+                        front_face: eframe::wgpu::FrontFace::Ccw,
+                        cull_mode: Some(eframe::wgpu::Face::Back),
+                        // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                        polygon_mode: eframe::wgpu::PolygonMode::Fill,
+                        // Requires Features::DEPTH_CLIP_CONTROL
+                        unclipped_depth: false,
+                        // Requires Features::CONSERVATIVE_RASTERIZATION
+                        conservative: false,
+                    },
+                    depth_stencil: None, // Some(DepthTexture::create_depth_stencil_state()),
+                    multisample: eframe::wgpu::MultisampleState::default(),
+                    multiview: None,
+                });
 
         let indices = [0, 1, 2, 3, 4, 5];
-        let index_buffer = args
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("grid index buffer"),
-                contents: bytemuck::cast_slice(&indices),
-                usage: wgpu::BufferUsages::INDEX,
-            });
+        let index_buffer =
+            args.device
+                .create_buffer_init(&eframe::wgpu::util::BufferInitDescriptor {
+                    label: Some("grid index buffer"),
+                    contents: bytemuck::cast_slice(&indices),
+                    usage: eframe::wgpu::BufferUsages::INDEX,
+                });
 
         Self {
             pipeline,
             bind_group,
             index_buffer,
-            uniform,
             buffer,
         }
     }

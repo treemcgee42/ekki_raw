@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::vertex::Vertex;
 
@@ -27,20 +27,20 @@ pub enum MeshBankKeys {
 /// This is a cache for default meshes.
 pub struct MeshBank {
     // Could probably be an array, since we are only querying with enums
-    map: HashMap<MeshBankKeys, Rc<Mesh>>,
+    map: HashMap<MeshBankKeys, Arc<Mesh>>,
 }
 
 impl MeshBank {
     pub fn initialize() -> Self {
         let map = HashMap::from([(
             MeshBankKeys::Cube,
-            Rc::new(Mesh::new_from_slice(CUBE_VERTICES, CUBE_INDICES)),
+            Arc::new(Mesh::new_from_slice(CUBE_VERTICES, CUBE_INDICES)),
         )]);
 
         Self { map }
     }
 
-    pub fn get(&self, key: MeshBankKeys) -> Rc<Mesh> {
+    pub fn get(&self, key: MeshBankKeys) -> Arc<Mesh> {
         if let Some(mesh) = self.map.get(&key) {
             return mesh.clone();
         }

@@ -96,7 +96,7 @@ fn grid(fragPos3D: vec3<f32>, scale: f32) -> vec4<f32> {
 
 struct FragmentShaderOutput {
     @location(0) color: vec4<f32>,
-    @builtin(frag_depth) fragDepth: f32,
+    // @builtin(frag_depth) fragDepth: f32,
 }
 
 @fragment
@@ -110,7 +110,7 @@ fn fs_main(in: VertexOut) -> FragmentShaderOutput {
         unproject_uniform.view_projection_matrix * vec4<f32>(fragment_on_xz_plane.xyz, 1.0);
 
     let depth: f32 = fragment_on_xz_plane_clip_space.z / fragment_on_xz_plane_clip_space.w;
-    output.fragDepth = depth;
+    //output.fragDepth = depth;
     let transformed_depth: f32 = 2. * depth - 1.; // between -1 and 1
     let linear_depth: f32 = 
         (2.0 * unproject_uniform.z_near * unproject_uniform.z_far) 

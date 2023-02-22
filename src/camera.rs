@@ -4,7 +4,7 @@ use crate::math::{
     matrix::{Matrix3, Matrix4},
     point::Point3,
     quaternion::Quaternion,
-    vector::Vector3,
+    vector::{Vector2, Vector3},
     Degrees, Radians,
 };
 
@@ -92,7 +92,7 @@ impl Camera {
 // kinds we want to target are "turntable" and "trackball". The Blender
 // implementation is in `source/blender/editors/space_view3d/view3d_navigate_rotate.c`.
 impl Camera {
-    pub fn turntable_rotate(&mut self, delta_mouse: cgmath::Vector2<f32>, window_size: (f32, f32)) {
+    pub fn turntable_rotate(&mut self, delta_mouse: Vector2, window_size: (f32, f32)) {
         let x_angle_scale_factor = 2.0 * (consts::PI as f32) / window_size.0;
         let y_angle_scale_factor = consts::PI as f32 / window_size.1;
 
@@ -104,7 +104,7 @@ impl Camera {
         // Axis around which we rotate to get side rotation.
         let side_side_rotation_axis = Vector3::unit_y();
 
-        let up_down_rotation_angle = y_angle_scale_factor * 1.0 * delta_mouse.y;
+        let up_down_rotation_angle = y_angle_scale_factor * 1.0 * delta_mouse.y();
         let side_side_rotation_angle = {
             let reverse_factor = {
                 if self.view_info.should_reverse {
@@ -113,7 +113,7 @@ impl Camera {
                     1.0
                 }
             };
-            x_angle_scale_factor * reverse_factor * delta_mouse.x
+            x_angle_scale_factor * reverse_factor * delta_mouse.x()
         };
 
         let rotation_modifier = {
@@ -261,6 +261,8 @@ impl ProjectionInfo {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+/// The CPU version of the uniform, which can be directly copied over to the GPU uniform
+/// by bytemucking it.
 pub struct CameraUniform {
     view_projection_matrix: [[f32; 4]; 4],
 }
@@ -272,6 +274,8 @@ impl CameraUniform {
         }
     }
 
+    /// Copies the view projection matrix from the camera into itself, overwriting the
+    /// previous value.
     pub fn update_view_projection_matrix(&mut self, camera: &Camera) {
         self.view_projection_matrix = camera.get_view_projection_matrix().into();
     }

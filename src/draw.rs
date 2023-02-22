@@ -1,12 +1,13 @@
-use wgpu::util::DeviceExt;
+use eframe::wgpu::util::DeviceExt;
 
 use crate::meshes::Mesh;
 use crate::vertex::Vertex;
 use std::rc::Rc;
+use std::sync::Arc;
 
 pub struct WgpuMesh {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+    pub vertex_buffer: eframe::wgpu::Buffer,
+    pub index_buffer: eframe::wgpu::Buffer,
     pub num_indices: u32,
 }
 
@@ -24,7 +25,7 @@ pub enum DrawCommandKind {
 /// `DrawCommand` that can be executed to draw the specified meshes.
 /// The order in which the meshes are drawn (within the same GPU draw
 /// call) is not well-defined.
-pub fn draw_meshes(device: &wgpu::Device, meshes: &Vec<Rc<Mesh>>) -> DrawCommand {
+pub fn draw_meshes(device: &eframe::wgpu::Device, meshes: &Vec<Arc<Mesh>>) -> DrawCommand {
     DrawCommand {
         wgpu_mesh: collect_meshes_into_buffers(device, meshes),
         kind: DrawCommandKind::DrawIndexedAll,
@@ -34,15 +35,15 @@ pub fn draw_meshes(device: &wgpu::Device, meshes: &Vec<Rc<Mesh>>) -> DrawCommand
 /// Collects the vertex/index data for a collection of meshes into a
 /// single vertex/index buffer. This is a utility function for preparing
 /// a single draw call for a collection of meshes.
-fn collect_meshes_into_buffers(device: &wgpu::Device, meshes: &Vec<Rc<Mesh>>) -> WgpuMesh {
+fn collect_meshes_into_buffers(device: &eframe::wgpu::Device, meshes: &Vec<Arc<Mesh>>) -> WgpuMesh {
     let mut vertices = Vec::<Vertex>::new();
     let mut indices = Vec::<u16>::new();
     for mesh in meshes {
-        println!(
-            "drawing {} verts, {} indices",
-            mesh.vertices.len(),
-            mesh.indices.len()
-        );
+        // println!(
+        //     "drawing {} verts, {} indices",
+        //     mesh.vertices.len(),
+        //     mesh.indices.len()
+        // );
         // We need to copy the elements over anyways since we are
         // sending the data to the GPU. `append()` destructs the
         // parameter given to it, but cloning the entire vertex
@@ -56,15 +57,15 @@ fn collect_meshes_into_buffers(device: &wgpu::Device, meshes: &Vec<Rc<Mesh>>) ->
         indices.append(&mut mesh.indices.clone());
     }
 
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let vertex_buffer = device.create_buffer_init(&eframe::wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(vertices.as_slice()),
-        usage: wgpu::BufferUsages::VERTEX,
+        usage: eframe::wgpu::BufferUsages::VERTEX,
     });
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    let index_buffer = device.create_buffer_init(&eframe::wgpu::util::BufferInitDescriptor {
         label: Some("Index Buffer"),
         contents: bytemuck::cast_slice(indices.as_slice()),
-        usage: wgpu::BufferUsages::INDEX,
+        usage: eframe::wgpu::BufferUsages::INDEX,
     });
     let num_indices = indices.len() as u32;
 

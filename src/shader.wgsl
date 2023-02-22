@@ -36,14 +36,14 @@ fn vs_main(
 
 struct FragmentShaderOutput {
     @location(0) color: vec4<f32>,
-    @builtin(frag_depth) fragDepth: f32,
+    // @builtin(frag_depth) fragDepth: f32,
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> FragmentShaderOutput {
     var out: FragmentShaderOutput;
 
-    out.fragDepth = in.fragment_depth; 
+    // out.fragDepth = in.fragment_depth; 
     out.color = vec4<f32>(in.color, 1.0);
 
     return out;
