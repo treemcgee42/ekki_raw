@@ -136,7 +136,7 @@ impl GridRenderResources {
                         // Requires Features::CONSERVATIVE_RASTERIZATION
                         conservative: false,
                     },
-                    depth_stencil: None, // Some(DepthTexture::create_depth_stencil_state()),
+                    depth_stencil: Some(DepthTexture::create_depth_stencil_state()),
                     multisample: eframe::wgpu::MultisampleState::default(),
                     multiview: None,
                 });

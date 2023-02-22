@@ -55,7 +55,6 @@ impl ApplicationState {
         if let Some(start) = p_start {
             let end = ui.input(|i| i.pointer.hover_pos()).unwrap();
             let delta_mouse = Vector2::new(end.x - start.x, end.y - start.y);
-            println!("delta mouse: ({}, {})", delta_mouse.x(), delta_mouse.y());
 
             self.camera
                 .turntable_rotate(delta_mouse, (rect_size.x(), rect_size.y()));
@@ -120,6 +119,7 @@ pub struct RenderResources {
     camera_info: ViewportRenderResources,
     grid: GridRenderResources,
     draw_commands: Vec<DrawCommand>,
+    depth_texture: DepthTexture,
     // TODO: store vertex/index buffers for reuse
 }
 
@@ -151,7 +151,7 @@ impl RenderResources {
         let camera_info = ViewportRenderResources::initialize(&device, camera_uniform);
 
         // Depth buffer
-        // let depth_texture = DepthTexture::new(&device, &window_size);
+        let depth_texture = DepthTexture::new(&device, &window_size);
 
         // Main render pipeline
         let render_pipeline_layout =
@@ -193,7 +193,7 @@ impl RenderResources {
                     // Requires Features::CONSERVATIVE_RASTERIZATION
                     conservative: false,
                 },
-                depth_stencil: None, //Some(DepthTexture::create_depth_stencil_state()),
+                depth_stencil: Some(DepthTexture::create_depth_stencil_state()),
                 multisample: eframe::wgpu::MultisampleState::default(),
                 multiview: None, // 5.
             });
@@ -217,7 +217,7 @@ impl RenderResources {
                 camera_info,
                 grid,
                 draw_commands: Vec::new(),
-                //depth_texture,
+                depth_texture,
             });
     }
 
