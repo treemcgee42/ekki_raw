@@ -74,6 +74,7 @@ fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         initial_window_size: Some(eframe::egui::vec2(350.0, 380.0)),
         multisampling: 1,
+        depth_buffer: 1, // bool
         renderer: eframe::Renderer::Wgpu,
         ..Default::default()
     };
