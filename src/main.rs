@@ -3,7 +3,6 @@ use std::rc::Rc;
 use camera::Camera;
 use draw::draw_meshes;
 // use event_loop::run_event_loop;
-use input_state::InputState;
 use meshes::MeshBank;
 use wgpu_setup::{ApplicationState, RenderResources};
 use windowing::{create_window, WindowState};

@@ -1,3 +1,4 @@
+use crate::input_state;
 use crate::meshes::Mesh;
 use eframe::wgpu::util::DeviceExt;
 use std::sync::Arc;
@@ -13,6 +14,7 @@ pub struct ApplicationState {
     pub camera: Camera,
     pub mesh_bank: MeshBank,
     pub drawing_stuff: DrawingStuff,
+    pub doing_turntable: bool,
 }
 
 impl ApplicationState {
@@ -25,6 +27,7 @@ impl ApplicationState {
             camera,
             mesh_bank,
             drawing_stuff,
+            doing_turntable: false,
         }
     }
 
@@ -50,14 +53,18 @@ impl ApplicationState {
         }
 
         // TODO: take user input and update camera accordingly
-        let response = ui.interact(rect, id, eframe::egui::Sense::drag());
-        let p_start = ui.input(|i| i.pointer.press_origin());
-        if let Some(start) = p_start {
-            let end = ui.input(|i| i.pointer.hover_pos()).unwrap();
-            let delta_mouse = Vector2::new(end.x - start.x, end.y - start.y);
+        ui.input(|i| self.handle_shortcut_viewport_camera_rotate(i));
 
-            self.camera
-                .turntable_rotate(delta_mouse, (rect_size.x(), rect_size.y()));
+        if self.doing_turntable {
+            let response = ui.interact(rect, id, eframe::egui::Sense::drag());
+            let p_start = ui.input(|i| i.pointer.press_origin());
+            if let Some(start) = p_start {
+                let end = ui.input(|i| i.pointer.hover_pos()).unwrap();
+                let delta_mouse = Vector2::new(end.x - start.x, end.y - start.y);
+
+                self.camera
+                    .turntable_rotate(delta_mouse, (rect_size.x(), rect_size.y()));
+            }
         }
 
         // Update CPU side uniforms
@@ -86,6 +93,22 @@ impl ApplicationState {
         };
 
         ui.painter().add(callback);
+    }
+
+    pub fn handle_shortcut_viewport_camera_rotate(
+        &mut self,
+        egui_input_state: &eframe::egui::InputState,
+    ) {
+        if input_state::viewport_camera_rotate(egui_input_state) {
+            self.doing_turntable = true;
+            return;
+        }
+
+        if self.doing_turntable {
+            self.camera.solidify_view_info();
+        }
+
+        self.doing_turntable = false;
     }
 }
 
