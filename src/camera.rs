@@ -258,25 +258,3 @@ impl ProjectionInfo {
         self.projection_matrix
     }
 }
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-/// The CPU version of the uniform, which can be directly copied over to the GPU uniform
-/// by bytemucking it.
-pub struct CameraUniform {
-    view_projection_matrix: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    pub fn new(camera: &Camera) -> Self {
-        Self {
-            view_projection_matrix: camera.get_view_projection_matrix().into(),
-        }
-    }
-
-    /// Copies the view projection matrix from the camera into itself, overwriting the
-    /// previous value.
-    pub fn update_view_projection_matrix(&mut self, camera: &Camera) {
-        self.view_projection_matrix = camera.get_view_projection_matrix().into();
-    }
-}

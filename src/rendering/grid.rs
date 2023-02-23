@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use eframe::wgpu::util::DeviceExt;
 
-use crate::{camera::Camera, math::matrix::Matrix4, wgpu_setup::DepthTexture};
+use crate::{camera::Camera, math::matrix::Matrix4};
+
+use super::depth_texture::DepthTexture;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -37,14 +39,7 @@ impl GridUniform {
     }
 }
 
-pub struct GridInitializeArgs<'a> {
-    pub device: &'a Arc<eframe::wgpu::Device>,
-    pub surface_format: eframe::wgpu::TextureFormat,
-    pub view_projection_matrix: Matrix4,
-    pub camera: &'a Camera,
-}
-
-pub struct GridRenderResources {
+pub(super) struct GridRenderResources {
     pub pipeline: eframe::wgpu::RenderPipeline,
     pub bind_group: eframe::wgpu::BindGroup,
     pub index_buffer: eframe::wgpu::Buffer,
@@ -52,8 +47,15 @@ pub struct GridRenderResources {
     pub buffer: eframe::wgpu::Buffer,
 }
 
+pub(super) struct GridRenderResourcesInitializeArgs<'a> {
+    pub device: &'a Arc<eframe::wgpu::Device>,
+    pub surface_format: eframe::wgpu::TextureFormat,
+    pub view_projection_matrix: Matrix4,
+    pub camera: &'a Camera,
+}
+
 impl GridRenderResources {
-    pub fn initialize(args: GridInitializeArgs) -> Self {
+    pub fn initialize(args: GridRenderResourcesInitializeArgs) -> Self {
         let uniform = GridUniform::new(args.camera);
         let buffer = args
             .device

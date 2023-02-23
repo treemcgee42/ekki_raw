@@ -1,24 +1,15 @@
-use std::rc::Rc;
-
-use camera::Camera;
-use draw::draw_meshes;
-// use event_loop::run_event_loop;
-use meshes::MeshBank;
-use wgpu_setup::{ApplicationState, RenderResources};
-use windowing::{create_window, WindowState};
+use application_state::ApplicationState;
+use rendering::render_resources::RenderResources;
 
 //mod bmesh;
+mod application_state;
 mod camera;
-mod draw;
 mod edges;
-// mod event_loop;
-mod grid;
 mod input_state;
 mod math;
 mod meshes;
+mod rendering;
 mod vertex;
-mod wgpu_setup;
-mod windowing;
 
 struct App {
     state: ApplicationState,
@@ -42,22 +33,20 @@ impl App {
 impl eframe::App for App {
     fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         eframe::egui::CentralPanel::default().show(ctx, |ui| {
-            eframe::egui::ScrollArea::both()
-                .auto_shrink([false; 2])
-                .show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.spacing_mut().item_spacing.x = 0.0;
-                        ui.label("The triangle is being painted using ");
-                        ui.hyperlink_to("WGPU", "https://wgpu.rs");
-                        ui.label(" (Portable Rust graphics API awesomeness)");
-                    });
-                    ui.label("It's not a very impressive demo, but it shows you can embed 3D inside of egui.");
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = 0.0;
+                ui.label("The triangle is being painted using ");
+                ui.hyperlink_to("WGPU", "https://wgpu.rs");
+                ui.label(" (Portable Rust graphics API awesomeness)");
+            });
+            ui.label(
+                "It's not a very impressive demo, but it shows you can embed 3D inside of egui.",
+            );
 
-                    eframe::egui::Frame::canvas(ui.style()).show(ui, |ui| {
-                        self.state.custom_painting(ui);
-                    });
-                    ui.label("Drag to rotate!");
-                });
+            eframe::egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                self.state.custom_painting(ui);
+            });
+            ui.label("Drag to rotate!");
         });
     }
 }
@@ -71,7 +60,7 @@ fn draw_cube(state: &mut ApplicationState) {
 
 fn main() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
-        initial_window_size: Some(eframe::egui::vec2(350.0, 380.0)),
+        initial_window_size: Some(eframe::egui::vec2(1280.0, 720.0)),
         multisampling: 1,
         depth_buffer: 1, // bool
         renderer: eframe::Renderer::Wgpu,
@@ -79,7 +68,7 @@ fn main() -> Result<(), eframe::Error> {
     };
 
     eframe::run_native(
-        "Custom 3D painting in eframe using glow",
+        "ekki",
         options,
         Box::new(|cc| Box::new(App::initialize(cc))),
     )
